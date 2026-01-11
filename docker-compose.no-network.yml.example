@@ -1,3 +1,6 @@
+# Version SANS réseau externe (si n8n est aussi sur Easypanel - réseau interne automatique)
+# Utilisez cette version si vous NE voulez PAS utiliser le réseau externe app-net
+
 services:
   fastvlm:
     build:
@@ -8,7 +11,6 @@ services:
       - PORT=8000
       - TORCH_DEVICE=cpu
     volumes:
-      # Cache pour les modèles HuggingFace (optionnel, pour éviter de re-télécharger)
       - ~/.cache/huggingface:/root/.cache/huggingface
     restart: unless-stopped
     healthcheck:
@@ -16,19 +18,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 180s  # Donner plus de temps pour le chargement initial du modèle (~3-4GB à télécharger)
-    networks:
-      - app-net
+      start_period: 180s
     deploy:
       resources:
         limits:
-          # Configuration CPU uniquement - ajustez selon les ressources de votre VPS
           memory: 6G
-          cpus: '2.0'  # Limitez les CPUs si nécessaire
+          cpus: '2.0'
         reservations:
           memory: 4G
           cpus: '1.0'
 
-networks:
-  app-net:
-    external: true
+# Pas de section networks - Easypanel gère automatiquement le réseau interne
