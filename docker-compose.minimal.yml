@@ -1,0 +1,37 @@
+# Version MINIMALE - Ressources réduites pour éviter "Killed"
+# Utilisez cette version si votre VPS a des ressources limitées
+
+services:
+  fastvlm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MODEL_NAME=apple/FastVLM-1.5B
+      - PORT=8000
+      - TORCH_DEVICE=cpu
+    volumes:
+      # Cache pour les modèles HuggingFace (optionnel, pour éviter de re-télécharger)
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s  # Plus de temps pour le chargement initial (le modèle prend du temps)
+    networks:
+      - app-net
+    deploy:
+      resources:
+        limits:
+          # Ressources réduites - ajustez selon votre VPS
+          memory: 4G  # Réduit de 6G à 4G
+          cpus: '1.0'  # Réduit de 2.0 à 1.0
+        reservations:
+          memory: 2G  # Réduit de 4G à 2G
+          cpus: '0.5'
+
+networks:
+  app-net:
+    external: true
