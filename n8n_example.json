@@ -1,0 +1,148 @@
+{
+  "name": "FastVLM Image Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "http://fastvlm:8000/health"
+      },
+      "id": "health-check",
+      "name": "Health Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data",
+        "fileName": "={{ $json.fileName }}"
+      },
+      "id": "read-image",
+      "name": "Read Image File",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convertir l'image binaire en base64\nconst binaryData = $input.item.binary.data.data;\nconst base64 = Buffer.from(binaryData).toString('base64');\nconst dataUri = `data:image/png;base64,${base64}`;\n\n// Préparer la requête pour FastVLM\nreturn {\n  json: {\n    image: dataUri,\n    prompt: \"What is in this image? Describe it in detail. Be specific about objects, colors, and actions.\",\n    max_length: 512\n  }\n};"
+      },
+      "id": "convert-base64",
+      "name": "Convert to Base64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastvlm:8000/generate",
+        "authentication": "none",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image",
+              "value": "={{ $json.image }}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "max_length",
+              "value": "={{ $json.max_length }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-fastvlm",
+      "name": "Call FastVLM API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "extract-response",
+              "name": "description",
+              "value": "={{ $json.response }}",
+              "type": "string"
+            },
+            {
+              "id": "extract-model",
+              "name": "model",
+              "value": "={{ $json.model }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract-response",
+      "name": "Extract Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Health Check": {
+      "main": [
+        [
+          {
+            "node": "Read Image File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Image File": {
+      "main": [
+        [
+          {
+            "node": "Convert to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Base64": {
+      "main": [
+        [
+          {
+            "node": "Call FastVLM API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call FastVLM API": {
+      "main": [
+        [
+          {
+            "node": "Extract Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
